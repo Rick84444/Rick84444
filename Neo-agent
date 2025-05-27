@@ -1,0 +1,314 @@
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+void main() {
+  runApp(NeoAgentApp());
+}
+
+class NeoAgentApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'NeoAgent',
+      theme: ThemeData.dark().copyWith(
+        primaryColor: Colors.blueAccent,
+        scaffoldBackgroundColor: Colors.black,
+      ),
+      home: NeoAgentChatPage(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class NeoAgentChatPage extends StatefulWidget {
+  @override
+  _NeoAgentChatPageState createState() => _NeoAgentChatPageState();
+}
+
+class _NeoAgentChatPageState extends State<NeoAgentChatPage> {
+  final TextEditingController _controller = TextEditingController();
+  final List<_ChatMsg> _messages = [];
+
+  void _sendPrompt() async {
+    String prompt = _controller.text.trim();
+    if (prompt.isEmpty) return;
+    setState(() {
+      _messages.add(_ChatMsg(prompt, isUser: true));
+    });
+    _controller.clear();
+
+    // Här: PROMPTMOTORN tolkar och utför åtgärder
+    String aiResponse = await _processPrompt(prompt);
+
+    setState(() {
+      _messages.add(_ChatMsg(aiResponse, isUser: false));
+    });
+  }
+
+  Future<String> _processPrompt(String prompt) async {
+    prompt = prompt.toLowerCase();
+    if (prompt.contains("öppna google")) {
+      final url = Uri.parse("https://www.google.com");
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+        return "🌐 Google öppnades!";
+      } else {
+        return "❌ Kunde inte öppna Google.";
+      }
+    }
+    if (prompt.contains("öppna kamera")) {
+      // Kan kräva ytterligare plugins, men vi kan öppna kamera-url på de flesta Android
+      final url = Uri.parse("intent://capture/#Intent;scheme=android.media.action.IMAGE_CAPTURE;end");
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+        return "📷 Kamera öppnades!";
+      } else {
+        return "❌ Kunde inte öppna kamera.";
+      }
+    }
+    if (prompt.contains("sök på youtube")) {
+      final query = prompt.replaceAll("sök på youtube", "").trim();
+      final url = Uri.parse("https://www.youtube.com/results?search_query=${Uri.encodeComponent(query)}");
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+        return "🔎 YouTube-sökning öppnad för \"$query\"!";
+      } else {
+        return "❌ Kunde inte öppna YouTube-sökning.";
+      }
+    }
+    if (prompt.contains("visa mina bilder")) {
+      // Öppnar Photos-appen om tillgänglig (kräver rätt intent på Android)
+      final url = Uri.parse("content://media/internal/images/media");
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+        return "🖼️ Bilder öppnade!";
+      } else {
+        return "❌ Kunde inte öppna bilder.";
+      }
+    }
+    // Fler kommandon? Lägg till här!
+    if (prompt.contains("skapa agent")) {
+      return
+          "✅ AI har tolkat din prompt och genererat en agent:\n\n```python\n# Auto-skapad agent enligt din prompt\n\ndef run():\n    print('Agenten körs!')\n\nif __name__ == '__main__':\n    run()\n```";
+    }
+    // Fallback – här kan du koppla GPT eller annan AI-backend!
+    return "🤖 Rose: Din prompt är mottagen! Lägg till fler åtgärder eller koppla AI för full automation.";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("NeoAgent Mobile – Systemstyrning"),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.all(8),
+              itemCount: _messages.length,
+              itemBuilder: (context, idx) => _messages[idx],
+            ),
+          ),
+          Divider(height: 1),
+          Container(
+            color: Colors.grey[900],
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: "Skriv din prompt till AI-agenten...",
+                      hintStyle: TextStyle(color: Colors.white38),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(16),
+                    ),
+                    onSubmitted: (_) => _sendPrompt(),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.send, color: Colors.blueAccent),
+                  onPressed: _sendPrompt,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatMsg extends StatelessWidget {
+  final String text;
+  final bool isUser;
+
+  _ChatMsg(this.text, {required this.isUser});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isUser ? Colors.blueAccent.withOpacity(0.7) : Colors.grey[800],
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: SelectableText(
+          text,
+          style: TextStyle(
+            color: isUser ? Colors.white : Colors.limeAccent,
+            fontSize: 15,
+            fontFamily: 'monospace',
+          ),
+        ),
+      ),
+    );
+  }
+}
+import 'package:url_launcher/url_launcher.dart';
+
+// Använd i din _sendPrompt-metod efter prompt-analys:
+if (prompt.toLowerCase().contains('öppna google')) {
+  final url = Uri.parse("https://www.google.com");
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url);
+    aiResponse = "🌐 Google öppnades!";
+  } else {
+    aiResponse = "❌ Kunde inte öppna Google.";
+  }
+}
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(NeoAgentApp());
+}
+
+class NeoAgentApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'NeoAgent',
+      theme: ThemeData.dark().copyWith(
+        primaryColor: Colors.blueAccent,
+        scaffoldBackgroundColor: Colors.black,
+      ),
+      home: NeoAgentChatPage(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class NeoAgentChatPage extends StatefulWidget {
+  @override
+  _NeoAgentChatPageState createState() => _NeoAgentChatPageState();
+}
+
+class _NeoAgentChatPageState extends State<NeoAgentChatPage> {
+  final TextEditingController _controller = TextEditingController();
+  final List<_ChatMsg> _messages = [];
+
+  void _sendPrompt() async {
+    String prompt = _controller.text.trim();
+    if (prompt.isEmpty) return;
+    setState(() {
+      _messages.add(_ChatMsg(prompt, isUser: true));
+    });
+    _controller.clear();
+
+    // Här anropas backend/AI. Just nu: MOCK-svar!
+    await Future.delayed(Duration(seconds: 2));
+    String aiResponse;
+    if (prompt.toLowerCase().contains("skapa agent")) {
+      aiResponse =
+          "✅ AI har tolkat din prompt och genererat en agent:\n\n```python\n# Auto-skapad agent enligt din prompt\n\ndef run():\n    print('Agenten körs!')\n\nif __name__ == '__main__':\n    run()\n```";
+    } else {
+      aiResponse = "🤖 Rose: Jag förstod din prompt och jobbar på en lösning!";
+    }
+
+    setState(() {
+      _messages.add(_ChatMsg(aiResponse, isUser: false));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("NeoAgent Mobile (Beta)"),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.all(8),
+              itemCount: _messages.length,
+              itemBuilder: (context, idx) => _messages[idx],
+            ),
+          ),
+          Divider(height: 1),
+          Container(
+            color: Colors.grey[900],
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: "Skriv din prompt till AI-agenten...",
+                      hintStyle: TextStyle(color: Colors.white38),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(16),
+                    ),
+                    onSubmitted: (_) => _sendPrompt(),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.send, color: Colors.blueAccent),
+                  onPressed: _sendPrompt,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatMsg extends StatelessWidget {
+  final String text;
+  final bool isUser;
+
+  _ChatMsg(this.text, {required this.isUser});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isUser ? Colors.blueAccent.withOpacity(0.7) : Colors.grey[800],
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: SelectableText(
+          text,
+          style: TextStyle(
+            color: isUser ? Colors.white : Colors.limeAccent,
+            fontSize: 15,
+            fontFamily: 'monospace',
+          ),
+        ),
+      ),
+    );
+  }
+}
